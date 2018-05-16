@@ -1,15 +1,17 @@
 import {
-    Component,
-    Input,
-    ElementRef,
-    OnInit,
-    ChangeDetectionStrategy,
-    Output,
-    EventEmitter
+  Component,
+  Input,
+  ElementRef,
+  OnInit,
+  ChangeDetectionStrategy,
+  Output,
+  EventEmitter
 } from '@angular/core';
+import { DaumAddressData } from './daum-address-data';
 
 declare var daum: any;
-const url = "https://ssl.daumcdn.net/dmaps/map_js_init/postcode.v2.js?autoload=false";
+const url =
+  'https://ssl.daumcdn.net/dmaps/map_js_init/postcode.v2.js?autoload=false';
 
 @Component({
   selector: 'btn-daum-address',
@@ -20,8 +22,8 @@ const url = "https://ssl.daumcdn.net/dmaps/map_js_init/postcode.v2.js?autoload=f
               >우편번호 찾기</button>`,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DaumAddressComponent implements OnInit{
-  @Output() result = new EventEmitter<Object>();
+export class DaumAddressComponent implements OnInit {
+  @Output() result = new EventEmitter<DaumAddressData>();
   @Input() options: any;
 
   public styleClass: String;
@@ -31,34 +33,44 @@ export class DaumAddressComponent implements OnInit{
     this.el = el;
   }
 
-  ngOnInit(){
-    this.debug = this.options && this.options.debug ? this.options.debug : false;
-    this.styleClass = this.options && this.options.class ? Array.isArray(this.options.class) ? this.options.class.join(" ") : this.options.class : '';
-    this.loadDaumApi().then(()=>{
-       this.print('Daum api has been loaded.');
+  ngOnInit() {
+    this.debug =
+      this.options && this.options.debug ? this.options.debug : false;
+    this.styleClass =
+      this.options && this.options.class
+        ? Array.isArray(this.options.class)
+          ? this.options.class.join(' ')
+          : this.options.class
+        : '';
+    this.loadDaumApi().then(() => {
+      this.print('Daum api has been loaded.');
     });
   }
 
-  private print(msg){
-    if(this.debug){
-      console.log(`[${Math.floor(new Date().getTime()/1000)}]`, msg);
+  private print(msg) {
+    if (this.debug) {
+      console.log(`[${Math.floor(new Date().getTime() / 1000)}]`, msg);
     }
   }
 
-  private daumApiCallback(data){
+  private daumApiCallback(data) {
     this.print(data);
-    let fullAddr = '', extraAddr = '', engAddr = '', zipCode = '';
+    let fullAddr = '',
+      extraAddr = '',
+      engAddr = '',
+      zipCode = '';
     if (data.userSelectedType === 'R') {
       fullAddr = data.roadAddress;
       zipCode = data.zonecode;
       engAddr = data.roadAddressEnglish;
-      if(data.bname !== ''){
+      if (data.bname !== '') {
         extraAddr += data.bname;
       }
-      if(data.buildingName !== ''){
-        extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+      if (data.buildingName !== '') {
+        extraAddr +=
+          extraAddr !== '' ? ', ' + data.buildingName : data.buildingName;
       }
-      fullAddr += (extraAddr !== '' ? ' ('+ extraAddr +')' : '');
+      fullAddr += extraAddr !== '' ? ' (' + extraAddr + ')' : '';
     } else {
       fullAddr = data.jibunAddress;
       zipCode = data.postcode;
@@ -66,84 +78,129 @@ export class DaumAddressComponent implements OnInit{
     }
 
     this.result.emit({
-      zip: zipCode,
-      addr: fullAddr,
-      addrEng: engAddr
+      zonecode: data.zonecode,
+      address: data.address,
+      addressEnglish: data.addressEnglish,
+      addressType: data.addressType,
+      userSelectedType: data.userSelectedType,
+      userLanguageType: data.userLanguageType,
+      roadAddress: data.roadAddress,
+      roadAddressEnglish: data.roadAddressEnglish,
+      jibunAddress: data.jibunAddress,
+      jibunAddressEnglish: data.jibunAddressEnglish,
+      autoRoadAddress: data.autoRoadAddress,
+      autoRoadAddressEnglish: data.autoRoadAddressEnglish,
+      autoJibunAddress: data.autoJibunAddress,
+      autoJibunAddressEnglish: data.autoJibunAddressEnglish,
+      buildingCode: data.buildingCode,
+      buildingName: data.buildingName,
+      apartment: data.apartment,
+      sido: data.sido,
+      sigungu: data.sigungu,
+      sigunguCode: data.sigunguCode,
+      roadnameCode: data.roadnameCode,
+      bcode: data.bcode,
+      roadname: data.roadname,
+      bname: data.bname,
+      bname1: data.bname1,
+      bname2: data.bname2,
+      hname: data.hname,
+      query: data.query,
+      postcode: data.postcode,
+      postcode1: data.postcode1,
+      postcode2: data.postcode2,
+      postcodeSeq: data.postcodeSeq
     });
   }
 
-  openDaumApi(){
+  openDaumApi() {
     let self = this;
-    if(!this.options || (!this.options.type || this.options.type==='popup')){
+    if (
+      !this.options ||
+      (!this.options.type || this.options.type === 'popup')
+    ) {
       daum.postcode.load(() => {
         new daum.Postcode({
-            oncomplete: (data)=> self.daumApiCallback(data)
+          oncomplete: data => self.daumApiCallback(data)
         }).open();
       });
-    }else{
-      if(!this.options.target){
+    } else {
+      if (!this.options.target) {
         this.print('ERROR: Parent Component does not have a target element.');
         return false;
       }
 
-      const $target = this.el.nativeElement.parentElement.querySelector(`#${this.options.target}`);
+      const $target = this.el.nativeElement.parentElement.querySelector(
+        `#${this.options.target}`
+      );
       this.print($target);
-      switch(this.options.type){
+      switch (this.options.type) {
         case 'layer':
           let width = this.options.width || 300;
           let height = this.options.height || 460;
           let border = this.options.border || 5;
           daum.postcode.load(() => {
             new daum.Postcode({
-                oncomplete: (data)=> self.daumApiCallback(data),
-                onclose: ()=> $target.style.display = 'none',
-                width: '100%',
-                height: '100%'
+              oncomplete: data => self.daumApiCallback(data),
+              onclose: () => ($target.style.display = 'none'),
+              width: '100%',
+              height: '100%'
             }).embed($target);
           });
           $target.style.display = 'block';
           $target.style.width = `${width}px`;
           $target.style.height = `${height}px`;
           $target.style.border = `${border}px solid`;
-          $target.style.left = `${(((window.innerWidth || document.documentElement.clientWidth) - width)/2 - border)}px`;
-          $target.style.top = `${(((window.innerHeight || document.documentElement.clientHeight) - height)/2 - border)}px`;
-          try{
-            $target.querySelector('#btnCloseLayer').onclick = ()=>{
+          $target.style.left = `${((window.innerWidth ||
+            document.documentElement.clientWidth) -
+            width) /
+            2 -
+            border}px`;
+          $target.style.top = `${((window.innerHeight ||
+            document.documentElement.clientHeight) -
+            height) /
+            2 -
+            border}px`;
+          try {
+            $target.querySelector('#btnCloseLayer').onclick = () => {
               $target.style.display = 'none';
             };
-          }catch(e){
+          } catch (e) {
             this.print(`ERROR: ${e.message}`);
           }
-        break;
+          break;
         case 'inline':
-          let currentScroll = Math.max(document.body.scrollTop, document.documentElement.scrollTop);
+          let currentScroll = Math.max(
+            document.body.scrollTop,
+            document.documentElement.scrollTop
+          );
           daum.postcode.load(() => {
             new daum.Postcode({
-                oncomplete: (data)=> {
-                  self.daumApiCallback(data);
-                  document.body.scrollTop = currentScroll;
-                },
-                onclose: ()=> $target.style.display = 'none',
-                onresize : (size)=> $target.style.height = size.height+'px',
-                width: '100%',
-                height: '100%'
+              oncomplete: data => {
+                self.daumApiCallback(data);
+                document.body.scrollTop = currentScroll;
+              },
+              onclose: () => ($target.style.display = 'none'),
+              onresize: size => ($target.style.height = size.height + 'px'),
+              width: '100%',
+              height: '100%'
             }).embed($target);
           });
           $target.style.display = 'block';
-          try{
-            $target.querySelector('#btnFoldWrap').onclick = ()=>{
+          try {
+            $target.querySelector('#btnFoldWrap').onclick = () => {
               $target.style.display = 'none';
             };
-          }catch(e){
+          } catch (e) {
             this.print(`ERROR: ${e.message}`);
           }
-        break;
+          break;
       }
     }
   }
 
-  private loadDaumApi(){
-    return new Promise((resolve, reject)=> {
+  private loadDaumApi() {
+    return new Promise((resolve, reject) => {
       let script = document.createElement('script');
       script.src = url;
       script.type = 'text/javascript';
