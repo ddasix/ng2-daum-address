@@ -1,6 +1,6 @@
 # ng2-daum-address
 
-> 앵귤러4를 위한 다음 주소 검색 
+> 앵귤러4를 위한 다음 주소 검색 ...
 
 [![NPM Version][npm-image]][npm-url]
 [![Downloads][npm-downloads-image]][npm-downloads-url]
